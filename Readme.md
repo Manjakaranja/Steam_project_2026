@@ -99,17 +99,15 @@ Transforms Silver datasets into a robust, conformed **Star Schema Warehouse** to
        ┌──────────────────┐             ┌────────────────┐
        │  dim_publishers  │             │   dim_genres   │
        └────────┬─────────┘             └───────┬────────┘
-                │                               │
-                ▼                               ▼
+                │                               │                                               
      ┌──────────────────────┐        ┌─────────────────────┐
      │bridge_game_publishers│        │ bridge_game_genres  │
      └──────────┬───────────┘        └──────────┬──────────┘
                 │                               │
                 └───────────────┬───────────────┘
                                 │
-                                ▼
                       ┌──────────────────┐      ┌─────────────┐
-                      │    fact_games    │─────►│  dim_dates  │
+                      │    fact_games    │──────│  dim_dates  │
                       └──────────────────┘      └─────────────┘
 
 ```
@@ -124,24 +122,23 @@ Transforms Silver datasets into a robust, conformed **Star Schema Warehouse** to
 
 ### Step 5: Gold Serving Layer (Data Marts)
 
-To improve query performance and simplify dashboard queries, several serving marts are materialized directly in Delta tables:
+To simplify analytics queries and reduce repeated aggregations, several serving marts are materialized directly in Delta tables.
+
+#### Serving Marts
 
 - `steam.gold.mart_publisher_performance`
-  Publisher-level metrics such as number of games, average pricing, ownership estimates, and review ratios.
+  Publisher-level KPIs including catalog size, pricing metrics, ownership estimates, and review ratios.
 
 - `steam.gold.market_trends`
-  Yearly market trends including release volume, pricing evolution, and ecosystem growth.
+  Yearly market trends such as release volume, pricing evolution, and marketplace growth.
 
 - `steam.gold.genre_platform_summary`
-  Genre distribution across Windows, MacOS, and Linux platforms.
+  Cross-platform genre distribution across Windows, MacOS, and Linux.
 
-- `steam.gold.genre_review_summary`
-  Average review performance and engagement metrics by genre.
+- `steam.gold.publisher_genre_affinity`
+  Publisher specialization and genre concentration across catalogs.
 
-- `steam.gold.publisher_genre_focus`
-  Publisher specialization by genre and catalog composition.
-
-These marts are pre-aggregated to reduce heavy joins and repeated calculations during analytics and visualization workloads.
+These marts provide pre-aggregated datasets optimized for downstream analytics and visualization workloads.
 
 ---
 
@@ -151,7 +148,7 @@ The architecture integrates native Lakehouse optimizations to handle large-scale
 
 ### Z-Ordering & File Compaction
 
-To minimize scan amplification and speed up critical join paths, tables are compacted and optimized based on frequent query predicates:
+Delta tables are optimized to improve query performance during analytics and visualization workloads :
 
 ```sql
 OPTIMIZE steam.gold.fact_games 
@@ -161,10 +158,9 @@ ZORDER BY (release_date);
 
 ### PySpark & SQL Snippets
 
-The pipeline relies heavily on high-throughput distributed PySpark patterns for extraction and storage:
+The pipeline relies on PySpark for data cleaning, transformation, and table generation :
 
 ```python
-# Flattening complex structures safely
 from pyspark.sql.functions import explode
 exploded_df = games_df.withColumn("genre", explode("genres"))
 
@@ -180,25 +176,53 @@ silver_df.write \
 
 ## Analytical Themes & Insights
 
-The consumption layer (`gold_analytics.ipynb`) translates warehouse assets into business intelligence dashboards focused on three main pillars:
+The analytics layer (`gold_analytics.ipynb`) translates the warehouse into a set of market-level analyses focused on three core areas:
 
-* **Ecosystem Concentration:** Uncovering the steep long-tail distribution where a minor fraction of AAA operators dominate ownership volume.
-* **Genre Economics:** Benchmarking genre profitability versus genre saturation to identify market entry gaps.
-* **Cross-Platform Asymmetries:** Quantitative analysis mapping genre specializations against Linux and Mac ecosystem adoptions.
+* **Market Concentration:** Analysis of ownership and engagement concentration across top-performing games and publishers.
+
+* **Genre Economics:** Comparison of genre-level pricing, review performance, and ownership trends across the marketplace.
+
+* **Platform Ecosystems:** Evaluation of Windows, macOS, and Linux support to identify cross-platform trends and genre-specific adoption patterns.
+
+
+---
+
+## Key Findings
+
+The analysis highlights several recurring patterns across the Steam marketplace:
+
+* **Genre Positioning Matters More Than Genre Volume:** While genres such as Action, Adventure, Casual, and Indie dominate the marketplace in terms of release volume, high saturation alone does not guarantee stronger engagement or commercial success.
+
+* **Cross-Platform Accessibility Increases Reach:** Windows remains the dominant platform across the Steam ecosystem, but broader compatibility with macOS, Linux, and handheld environments such as the Steam Deck expands potential audience reach.
+
+* **Localization Plays a Major Role in Visibility:** English remains the primary language across the marketplace, while additional support for major international languages significantly improves global accessibility.
+
+* **Pricing Remains Concentrated Around Accessible Ranges:** Most games are positioned around accessible low-to-mid pricing ranges, suggesting that extreme premium pricing remains limited to a smaller subset of established titles.
+
+* **Market Concentration Remains Strong:** Ownership and engagement remain heavily concentrated around a relatively small number of games and publishers, reflecting strong long-tail dynamics across the ecosystem.
+
+
+---
+
+## What Drives Visibility & Engagement on Steam?
+
+The analysis suggests that successful games on Steam tend to combine several recurring characteristics:
+
+* Strong positioning within highly demanded genres such as Action, Adventure, Casual, and Multiplayer experiences.
+
+* Broad technical accessibility through Windows compatibility, often extended to Linux and handheld ecosystems through Steam Deck and Proton support.
+
+* Wider international reach enabled by English-first localization combined with support for major secondary languages.
+
+* Accessible pricing strategies positioned around low-to-mid market ranges rather than extreme premium pricing.
+
+* Strong differentiation inside highly saturated categories, where visibility depends not only on genre selection but also on discoverability and player reception.
 
 ---
 
 ## Future Roadmap
 
-* **Data Governance:** Transition metadata architecture to Unity Catalog for column-level lineage and fine-grained access.
+* **Data Governance:**  Integrate Unity Catalog for centralized schema management, access control, and data lineage.
 * **Orchestration:** Implement Apache Airflow or Databricks Workflows for automated, scheduled pipeline runs.
 * **Data Quality Guardrails:** Embed **Great Expectations** or Delta Live Tables (DLT) expectations for programmatic data testing.
 * **CI/CD:** Introduce GitHub Actions for automated notebook deployment to staging and production clusters.
-
----
-
-## Conclusion
-
-This platform demonstrates a production-grade implementation of a Databricks Lakehouse. By separating raw data immutability, structural isolation, and normalized dimensional modeling from pre-aggregated serving layers, the project avoids the pitfalls of unstructured notebook code and delivers a maintainable, high-performance analytical engine fit for enterprise BI.
-
-
