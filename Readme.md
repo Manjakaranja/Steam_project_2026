@@ -226,3 +226,23 @@ The analysis suggests that successful games on Steam tend to combine several rec
 * **Orchestration:** Implement Apache Airflow or Databricks Workflows for automated, scheduled pipeline runs.
 * **Data Quality Guardrails:** Embed **Great Expectations** or Delta Live Tables (DLT) expectations for programmatic data testing.
 * **CI/CD:** Introduce GitHub Actions for automated notebook deployment to staging and production clusters.
+
+## Link to Databricks ressources
+
+Link : https://dbc-d6f92ac6-02fe.cloud.databricks.com/editor/notebooks/691053708266143?o=7474654066156834
+
+## Repository Structure
+
+.
+├─ data/
+│  └─ Readme.md                  # dataset source and storage information
+│
+├─ notebooks/                    # Databricks notebooks
+│  ├─ steam_eda.ipynb            # exploratory data analysis
+│  ├─ bronze_ingestion.ipynb     # raw ingestion into Bronze Delta tables
+│  ├─ silver_preprocessing.ipynb # cleaning, normalization, and preprocessing
+│  ├─ gold_core_and_marts.ipynb  # dimensional modeling and serving marts
+│  └─ gold_analytics.ipynb       # analytics and visualization layer
+│
+├─ .gitignore
+└─ Readme.md                     # project documentation
