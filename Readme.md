@@ -1,4 +1,3 @@
-```markdown
 # Steam Market Intelligence Lakehouse
 
 Production-oriented Medallion Architecture built on Databricks to analyze Steam's global video game marketplace using PySpark, Delta Lake, and AWS S3.
@@ -189,4 +188,4 @@ The consumption layer (`gold_analytics.ipynb`) translates warehouse assets into 
 
 This platform demonstrates a production-grade implementation of a Databricks Lakehouse. By separating raw data immutability, structural isolation, and normalized dimensional modeling from pre-aggregated serving layers, the project avoids the pitfalls of unstructured notebook code and delivers a maintainable, high-performance analytical engine fit for enterprise BI.
 
-```
+
