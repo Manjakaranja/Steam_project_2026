@@ -233,6 +233,7 @@ Link : https://dbc-d6f92ac6-02fe.cloud.databricks.com/editor/notebooks/691053708
 
 ## Repository Structure
 
+```text
 .
 ├─ data/
 │  └─ Readme.md                  # dataset source and storage information
@@ -246,3 +247,4 @@ Link : https://dbc-d6f92ac6-02fe.cloud.databricks.com/editor/notebooks/691053708
 │
 ├─ .gitignore
 └─ Readme.md                     # project documentation
+```
