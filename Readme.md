@@ -227,9 +227,13 @@ The analysis suggests that successful games on Steam tend to combine several rec
 * **Data Quality Guardrails:** Embed **Great Expectations** or Delta Live Tables (DLT) expectations for programmatic data testing.
 * **CI/CD:** Introduce GitHub Actions for automated notebook deployment to staging and production clusters.
 
+---
+
 ## Link to Databricks ressources
 
 Link : https://dbc-d6f92ac6-02fe.cloud.databricks.com/editor/notebooks/691053708266143?o=7474654066156834
+
+---
 
 ## Repository Structure
 
