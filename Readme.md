@@ -1,900 +1,192 @@
+```markdown
 # Steam Market Intelligence Lakehouse
 
-Production-oriented Medallion Architecture built on Databricks to analyze Steam's global video game marketplace using PySpark, Delta Lake and AWS S3.
-
-Cloud-scale Medallion Architecture project designed to analyze Steam's global video game marketplace using Databricks, PySpark, Delta Lake and AWS S3.
+Production-oriented Medallion Architecture built on Databricks to analyze Steam's global video game marketplace using PySpark, Delta Lake, and AWS S3.
 
 ---
 
-# Academic Context
+## Academic & Business Context
 
-This project was developed as part of the CDSD RNCP Level 6 certification pathway (RNCP35288), specifically for Bloc 2 focused on large-scale data processing, analytical modeling and cloud-native data architectures.
+This platform was developed as part of the **CDSD RNCP Level 6 certification pathway (RNCP35288)**, specifically for *Bloc 2 (Large-scale data processing, analytical modeling, and cloud-native data architectures)*.
 
-The project was intentionally designed using production-oriented engineering practices rather than a traditional academic notebook workflow.
+Instead of relying on traditional, isolated exploratory notebooks, this project intentionally embraces enterprise-grade **Analytics Engineering** practices. It positions Steam as a massive, macroeconomic digital marketplace to help publishers, analysts, and product teams answer business-critical questions:
 
-The objective was not only to explore the Steam dataset, but to build a complete analytical platform capable of:
-
-* Ingesting semi-structured large-scale datasets
-* Designing a Medallion Architecture on Databricks
-* Building scalable Bronze, Silver and Gold layers
-* Modeling analytical dimensions and fact tables
-* Resolving many-to-many relationships through bridge tables
-* Producing serving marts for business intelligence
-* Conducting market-level analytics on the global video game ecosystem
-
-The analysis focuses on Steam's marketplace and aims to identify the commercial, behavioral and structural factors influencing:
-
-* Video game popularity
-* Market visibility
-* User engagement
-* Genre performance
-* Platform distribution
-* Pricing strategies
-* Publisher dominance
+* **Market Concentration:** Which publishers dominate the marketplace, and where are the power-law effects/revenue concentrations?
+* **Commercial Traction:** Which genres and pricing/discount strategies generate the highest user engagement?
+* **Data-Driven Dynamics:** How do review ratios directly impact visibility, popularity, and estimated ownership?
+* **Ecosystem Distribution:** What do localization (languages) and platform adoption (Windows, Mac, Linux) trends look like across market cycles?
 
 ---
 
-# Project Overview
+## Technology Stack
 
-This project implements a complete Medallion Architecture pipeline on Databricks to transform raw Steam marketplace data into a scalable analytical warehouse optimized for business intelligence and market analytics.
-
-The platform combines:
-
-* Semi-structured JSON ingestion
-* Delta Lake storage
-* Bronze/Silver/Gold layered modeling
-* PySpark transformations
-* SQL-based analytical modeling
-* Data marts materialization
-* Market intelligence analytics
-* Databricks visualizations
-
-The architecture follows modern Lakehouse engineering principles using AWS S3 as the storage layer and Delta Lake as the transactional storage format.
-
-Instead of relying on a single exploratory notebook, the project separates ingestion, preprocessing, dimensional modeling and analytical consumption into dedicated layers.
+* **Data Platform:** Databricks, Apache Spark (PySpark / Spark SQL), Delta Lake, AWS S3
+* **Analytics Engineering:** Python, Pandas, Databricks SQL Engine
+* **Visualization:** Databricks Visualization Engine & Dashboards
 
 ---
 
-# Business Objective
+## System Architecture & Data Flow
 
-The objective is to help publishers, analysts and product teams better understand the structure and economics of the Steam ecosystem.
-
-The platform enables analysis of:
-
-* Which publishers dominate Steam's marketplace
-* Which genres generate the highest commercial traction
-* How review ratios impact visibility and popularity
-* How pricing and discount strategies are distributed
-* Platform adoption across Windows, Mac and Linux
-* Release trends across years and market cycles
-* Localization and language availability patterns
-* Age restriction distribution across the catalog
-* Power-law effects in game popularity and revenue concentration
-
-The project positions Steam as a large-scale commercial marketplace rather than simply a gaming platform.
-
----
-
-# Technology Stack
-
-## Data Platform
-
-* Databricks
-* Apache Spark
-* PySpark
-* Spark SQL
-* Delta Lake
-* AWS S3
-
-## Analytics & Processing
-
-* Python
-* Pandas
-* Databricks SQL
-* Delta Optimizations
-
-## Visualization
-
-* Databricks Visualization Engine
-* Databricks Dashboards
-
----
-
-# Architecture Overview
-
-The platform follows a Medallion Architecture design:
+The platform implements a classic **Medallion Architecture** using AWS S3 as the object store and Delta Lake as the transactional storage format. 
 
 ```text
-Raw JSON Dataset
-        ↓
-Bronze Layer
-        ↓
-Silver Layer
-        ↓
-Gold Core Warehouse
-        ↓
-Serving Data Marts
-        ↓
-Business Analytics
+ s3://full-stack-bigdata-datasets/.../steam_game_output.json
+                            │
+                            ▼
+               ┌──────────────────────────┐
+               │    steam.bronze (S3)     │ ◄── [Step 2: Raw Ingestion & Schema Lock]
+               └────────────┬─────────────┘
+                            │
+                            ▼
+               ┌──────────────────────────┐
+               │    steam.silver (S3)     │ ◄── [Step 3: Cleaning & Array Flattening]
+               └────────────┬─────────────┘
+                            │
+                            ▼
+               ┌──────────────────────────┐
+               │  steam.gold (Core Whse)  │ ◄── [Step 4: Dimension/Fact Star Schema]
+               └────────────┬─────────────┘
+                            │
+                            ▼
+               ┌──────────────────────────┐
+               │  steam.gold (BI Marts)   │ ◄── [Step 5: Pre-Aggregated Serving Layer]
+               └──────────────────────────┘
+
 ```
 
-All layers are materialized as Delta tables directly inside Databricks schemas:
+### Repository Structure & Execution Order
 
-```text
-steam.bronze.*
-steam.silver.*
-steam.gold.*
-```
-
-This design provides:
-
-* Incremental scalability
-* Layer isolation
-* Query optimization
-* Data quality control
-* BI-ready serving tables
-* Production-grade analytical governance
-
----
-
-# Storage Architecture
-
-AWS S3 acts as the raw storage layer.
-
-The original Steam dataset is loaded from:
-
-```text
-s3://full-stack-bigdata-datasets/Big_Data/Project_Steam/steam_game_output.json
-```
-
-Delta Lake tables are then materialized directly inside Databricks catalogs and schemas.
-
-The project uses:
-
-* ACID-compliant Delta tables
-* Columnar storage
-* Optimized analytical reads
-* Lakehouse-style architecture
-
----
-
-# Repository Structure
+The pipeline is modularized into dedicated notebooks matching architectural responsibilities. They must be executed sequentially:
 
 ```text
 project/
-│
-├── steam_eda.ipynb
-├── bronze_ingestion.ipynb
-├── silver_preprocessing.ipynb
-├── gold_core_and_serving_marts.ipynb
-├── gold_analytics.ipynb
-│
-├── README.md
-└── requirements.txt
-```
+├── steam_eda.ipynb                    # 1. Structural exploration & missing value analysis
+├── bronze_ingestion.ipynb              # 2. Immutable raw ingestion from S3 to Delta
+├── silver_preprocessing.ipynb          # 3. Type normalization, flattening, & feature prep
+├── gold_core_and_serving_marts.ipynb  # 4. Dimensional modeling & BI materialization
+├── gold_analytics.ipynb               # 5. Market intelligence & dashboard metrics
+├── requirements.txt
+└── README.md
 
-Each notebook corresponds to a distinct architectural responsibility inside the platform.
+```
 
 ---
 
-# Data Flow Overview
+## Layer-by-Layer Engineering
+
+### Step 1: Exploratory Data Analysis (steam_eda.ipynb)
+
+Before industrialization, structural analysis was performed to map the data terrain: missing value distributions, nested array depths (genres, categories), pricing anomalies, and language coverage anomalies.
+
+### Step 2: Bronze Layer (bronze_ingestion.ipynb)
+
+Acts as the immutable, schema-enforced source of truth. It reads raw semi-structured JSON directly from S3 with minimal cleaning.
+
+* **Schema:** `CREATE SCHEMA IF NOT EXISTS steam.bronze`
+* **Primary Asset:** `steam.bronze.steam_games_bronze`
+
+### Step 3: Silver Layer (silver_preprocessing.ipynb)
+
+Performs rigorous data cleaning, type casting, date standardization, and handles nested array layouts. To support clean downstream analytics without data distortion, the data was decoupled into two tables:
+
+1. **Canonical Games:** `steam.silver.steam_games` — The definitive representation of a game grain.
+2. **Genre Breakdown:** `steam.silver.steam_games_genres` — An exploded analytical table isolated to prevent metric multiplication during early aggregations.
+
+### Step 4: Gold Core Layer & Dimensional Modeling
+
+Transforms Silver datasets into a robust, conformed **Star Schema Warehouse** to support consistent cross-domain analytics.
 
 ```text
-Steam Raw JSON
-        ↓
-Bronze Ingestion
-        ↓
-Schema Normalization
-        ↓
-Silver Preprocessing
-        ↓
-Analytical Feature Engineering
-        ↓
-Gold Dimensional Modeling
-        ↓
-Bridge Table Resolution
-        ↓
-Serving Mart Materialization
-        ↓
-Business Analytics
+       ┌──────────────────┐             ┌────────────────┐
+       │  dim_publishers  │             │   dim_genres   │
+       └────────┬─────────┘             └───────┬────────┘
+                │                               │
+                ▼                               ▼
+     ┌──────────────────────┐        ┌─────────────────────┐
+     │bridge_game_publishers│        │ bridge_game_genres  │
+     └──────────┬───────────┘        └──────────┬──────────┘
+                │                               │
+                └───────────────┬───────────────┘
+                                │
+                                ▼
+                      ┌──────────────────┐      ┌─────────────┐
+                      │    fact_games    │─────►│  dim_dates  │
+                      └──────────────────┘      └─────────────┘
+
 ```
 
-The pipeline progressively transforms semi-structured marketplace data into business-oriented analytical assets.
+* **Conformed Dimensions:** `dim_publishers` (with fallback logic for missing values), `dim_genres`, and a calendar-based `dim_dates`.
+* **Central Fact Table:** `fact_games` — Houses granular business metrics (pricing, reviews, estimated ownership, platform support indices).
+* **Many-to-Many (M2M) Resolution:** Games on Steam frequently have multiple genres and publishers. Joining directly against them introduces dangerous **fan-out duplication effects** that artificially multiply revenue/ownership metrics. This project cleanly resolves M2M constraints using dedicated **Bridge Tables**:
+* `steam.gold.bridge_game_genres`
+* `steam.gold.bridge_game_publishers`
+
+
+
+### Step 5: Gold Serving Layer (Data Marts)
+
+To optimize BI query response times and lower dashboard engine workloads, wide, pre-aggregated serving data marts are materialized directly in Delta:
+
+* `steam.gold.mart_publisher_performance`: Tracks publisher KPIs, average pricing, market share, and review success.
+* `steam.gold.market_trends`: Time-series aggregates monitoring market dynamics and ecosystem expansion across years.
 
 ---
 
-# Step 1 — Exploratory Data Analysis
+## Delta Lake & Performance Engineering
 
-Notebook:
+The architecture integrates native Lakehouse optimizations to handle large-scale analytics efficiently:
 
-```text
-steam_eda.ipynb
-```
+### Z-Ordering & File Compaction
 
-The EDA layer performs a complete structural exploration of the Steam dataset before industrialization.
-
-The notebook investigates:
-
-* Dataset dimensions
-* Missing value distribution
-* Platform availability
-* Languages coverage
-* Categories structure
-* Genre distribution
-* Pricing and discounts
-* Required age restrictions
-* Estimated owners distribution
-* Release date trends
-* Review metrics
-* Publisher and developer concentration
-
-This stage validates the dataset structure and identifies the transformations required for downstream modeling.
-
----
-
-# Step 2 — Bronze Layer Ingestion
-
-Notebook:
-
-```text
-bronze_ingestion.ipynb
-```
-
-The Bronze layer acts as the raw ingestion zone of the Lakehouse.
-
-Main responsibilities:
-
-* Raw JSON ingestion from S3
-* Minimal cleaning
-* Schema standardization
-* Delta table persistence
-* Initial validation checks
-
-The Bronze table preserves the original dataset structure as closely as possible while ensuring ingestion stability.
-
-Created schema:
+To minimize scan amplification and speed up critical join paths, tables are compacted and optimized based on frequent query predicates:
 
 ```sql
-CREATE SCHEMA IF NOT EXISTS steam.bronze
+OPTIMIZE steam.gold.fact_games 
+ZORDER BY (release_date);
+
 ```
 
-Primary table:
+### PySpark & SQL Snippets
 
-```text
-steam.bronze.steam_games_bronze
-```
-
-This layer serves as the immutable source of truth for downstream transformations.
-
----
-
-# Step 3 — Silver Layer Engineering
-
-Notebook:
-
-```text
-silver_preprocessing.ipynb
-```
-
-The Silver layer performs preprocessing, normalization and analytical restructuring.
-
-Main transformations include:
-
-* Type normalization
-* Missing value handling
-* Nested field flattening
-* Date standardization
-* Text normalization
-* Analytical feature preparation
-* Genre explosion handling
-
-The Silver layer produces two curated analytical tables.
-
-## Canonical Games Table
-
-```text
-steam.silver.steam_games
-```
-
-This table represents the canonical business representation of a Steam game.
-
-Each row corresponds to a single game with cleaned and standardized attributes.
-
-## Genre Analytical Table
-
-```text
-steam.silver.steam_games_genres
-```
-
-This exploded analytical table isolates the relationship between games and genres.
-
-The table was intentionally separated from the canonical games table in order to:
-
-* simplify genre aggregations
-* avoid metric multiplication during joins
-* support scalable segmented analytics
-* preserve the canonical grain of the fact table
-
-This modeling decision becomes especially important once ownership and revenue metrics are introduced into the Gold warehouse layer.
-
----
-
-# Step 4 — Gold Core Warehouse Modeling
-
-Notebook:
-
-```text
-gold_core_and_serving_marts.ipynb
-```
-
-The Gold layer transforms Silver datasets into a dimensional warehouse optimized for analytics and BI consumption.
-
-The architecture separates:
-
-* Conformed dimensions
-* Core fact tables
-* Bridge tables
-* Analytical serving marts
-
----
-
-# Gold Dimension Tables
-
-## Publishers Dimension
-
-```text
-steam.gold.dim_publishers
-```
-
-Centralized publisher reference dimension.
-
-Missing publishers are normalized using fallback logic to preserve analytical consistency.
-
-## Genres Dimension
-
-```text
-steam.gold.dim_genres
-```
-
-Reference dimension containing normalized genre entities.
-
-## Dates Dimension
-
-```text
-steam.gold.dim_dates
-```
-
-Calendar dimension enabling time-series and release trend analysis.
-
----
-
-# Gold Fact Table
-
-## Games Fact Table
-
-```text
-steam.gold.fact_games
-```
-
-Core analytical fact table containing standardized business metrics for Steam games.
-
-The fact table centralizes:
-
-* Pricing metrics
-* Reviews
-* Estimated ownership
-* Platform availability
-* Release information
-* Commercial indicators
-* Engagement signals
-
-This table acts as the central warehouse entity powering downstream marts and dashboards.
-
----
-
-# Bridge Tables
-
-The Steam dataset contains multiple many-to-many relationships.
-
-The project resolves these relationships through dedicated bridge tables to avoid fan-out duplication effects during aggregation.
-
-## Game ↔ Genre Bridge
-
-```text
-steam.gold.bridge_game_genres
-```
-
-Allows a single game to be associated with multiple genres while preserving aggregation correctness.
-
-## Game ↔ Publisher Bridge
-
-```text
-steam.gold.bridge_game_publishers
-```
-
-Allows multi-publisher attribution while maintaining warehouse normalization.
-
----
-
-# Serving Layer & Data Marts
-
-The serving layer materializes pre-aggregated analytical tables optimized for dashboards and business reporting.
-
-Examples include:
-
-## Publisher Performance Mart
-
-```text
-steam.gold.mart_publisher_performance
-```
-
-Provides pre-aggregated publisher KPIs including:
-
-* number of published games
-* estimated ownership metrics
-* average review ratios
-* average pricing
-* publisher-level market concentration
-
-## Market Trends Mart
-
-```text
-steam.gold.market_trends
-```
-
-Centralized time-series metrics for release dynamics and marketplace evolution.
-
-The serving layer reduces dashboard query complexity and improves BI responsiveness.
-
----
-
-# Gold Layer Engineering Notes
-
-The Gold layer intentionally separates governance-oriented warehouse entities from dashboard-oriented marts.
-
-Core entities such as:
-
-* `fact_games`
-* `dim_publishers`
-* `dim_genres`
-* `bridge_game_genres`
-
-preserve analytical correctness and reusable business logic.
-
-Serving marts such as:
-
-* `mart_publisher_performance`
-* `market_trends`
-* `genre_platform_summary`
-
-are intentionally pre-aggregated to reduce dashboard query complexity and improve BI responsiveness.
-
-The architecture follows a hybrid Analytics Engineering approach inspired by both traditional dimensional warehousing and modern Lakehouse design.
-
----
-
-# Delta Lake Optimizations
-
-The platform includes Delta optimization operations for analytical performance.
-
-Examples:
-
-```sql
-OPTIMIZE steam.gold.fact_games
-```
-
-These optimizations improve:
-
-* Query latency
-* File compaction
-* Scan efficiency
-* Dashboard responsiveness
-
-The project follows Lakehouse performance engineering best practices.
-
----
-
-# Analytical Themes
-
-Notebook:
-
-```text
-gold_analytics.ipynb
-```
-
-The analytical layer explores the Steam ecosystem through multiple market-level perspectives.
-
----
-
-# Market Overview Analytics
-
-The project analyzes:
-
-* Most popular games
-* Best selling games
-* Publisher concentration
-* Best rated games
-* Steam release trends
-* Pricing distributions
-* Discount strategies
-* Supported languages
-* Age restriction patterns
-
----
-
-# Genre Analytics
-
-The platform investigates:
-
-* Most represented genres
-* Genre profitability
-* Genre review performance
-* Genre-platform relationships
-* Genre popularity concentration
-
----
-
-# Platform Analytics
-
-The project evaluates:
-
-* Windows vs Mac vs Linux availability
-* Cross-platform adoption
-* Platform specialization by genre
-* Distribution asymmetries across operating systems
-
----
-
-# Key Engineering Concepts
-
-The project intentionally implements production-grade warehouse concepts.
-
-## Canonical Tables
-
-The Silver canonical tables provide a stable and deduplicated representation of core business entities.
-
-## Bridge Tables
-
-Bridge tables resolve many-to-many relationships while avoiding aggregation distortions.
-
-## Fan-Out Prevention
-
-The modeling strategy explicitly prevents metric multiplication during joins.
-
-## Conformed Dimensions
-
-Dimensions are standardized to support consistent cross-domain analytics.
-
-## Serving Marts
-
-Dedicated marts provide BI-ready analytical datasets optimized for consumption.
-
----
-
-# Data Modeling Strategy
-
-The warehouse follows a hybrid dimensional approach combining:
-
-* Star-schema principles
-* Bridge-table normalization
-* Lakehouse optimization
-* Delta-based storage
-
-This architecture balances:
-
-* Scalability
-* Analytical flexibility
-* Query performance
-* Data quality
-* Maintainability
-
----
-
-# Running the Project
-
-## Environment Requirements
-
-* Databricks Runtime
-* AWS S3 access
-* Spark cluster
-
-## Main Workflow
-
-The notebooks are executed sequentially:
-
-```text
-1. steam_eda.ipynb
-2. bronze_ingestion.ipynb
-3. silver_preprocessing.ipynb
-4. gold_core_and_serving_marts.ipynb
-5. gold_analytics.ipynb
-```
-
----
-
-# Final Analytical Outputs
-
-| Layer     | Main Assets                        |
-| --------- | ---------------------------------- |
-| Bronze    | Raw Steam ingestion tables         |
-| Silver    | Canonical cleaned datasets         |
-| Gold Core | Dimensions, facts and bridges      |
-| Serving   | Business marts and aggregated KPIs |
-| Analytics | Market intelligence dashboards     |
-
----
-
-# Example Warehouse Relationships
-
-```text
-fact_games
-    │
-    ├── dim_publishers
-    ├── dim_genres
-    ├── dim_dates
-    │
-    ├── bridge_game_genres
-    └── bridge_game_publishers
-```
-
-This modeling strategy enables:
-
-* Flexible many-to-many analysis
-* Genre-level aggregation
-* Publisher segmentation
-* Cross-platform analytics
-* Time-series exploration
-
-while preventing fan-out duplication during joins.
-
----
-
-# Example Analytical Questions
-
-The warehouse was designed to answer complex business questions such as:
-
-* Which publishers dominate Steam's marketplace?
-* Which genres generate the strongest engagement?
-* Are indie games outperforming AAA publishers?
-* Which genres receive the best review ratios?
-* How concentrated is the market around top-selling games?
-* Do lower-priced games receive better engagement?
-* Which operating systems are most represented?
-* How did the Covid period affect release volume?
-* Which genres are the most cross-platform friendly?
-* Are discounts concentrated around specific categories?
-
----
-
-# Example PySpark Operations
-
-The project relies heavily on distributed PySpark transformations.
-
-Examples include:
-
-## Nested Array Explosion
+The pipeline relies heavily on high-throughput distributed PySpark patterns for extraction and storage:
 
 ```python
+# Flattening complex structures safely
 from pyspark.sql.functions import explode
+exploded_df = games_df.withColumn("genre", explode("genres"))
 
-exploded_df = games_df.withColumn(
-    "genre",
-    explode("genres")
-)
-```
-
-## Delta Table Persistence
-
-```python
+# ACID-compliant Delta persistence
 silver_df.write \
     .format("delta") \
     .mode("overwrite") \
     .saveAsTable("steam.silver.steam_games")
-```
 
-## Analytical Aggregations
-
-```python
-genre_metrics = (
-    games_df
-    .groupBy("genre")
-    .agg(avg("positive_ratio"))
-)
 ```
 
 ---
 
-# SQL Modeling Layer
+## Analytical Themes & Insights
 
-Spark SQL is used extensively inside the Gold warehouse layer.
+The consumption layer (`gold_analytics.ipynb`) translates warehouse assets into business intelligence dashboards focused on three main pillars:
 
-Example:
+* **Ecosystem Concentration:** Uncovering the steep long-tail distribution where a minor fraction of AAA operators dominate ownership volume.
+* **Genre Economics:** Benchmarking genre profitability versus genre saturation to identify market entry gaps.
+* **Cross-Platform Asymmetries:** Quantitative analysis mapping genre specializations against Linux and Mac ecosystem adoptions.
 
-```sql
-CREATE TABLE steam.gold.fact_games AS
-SELECT
-    game_id,
-    publisher_id,
-    release_date,
-    price,
-    positive_ratio,
-    estimated_owners
-FROM steam.silver.steam_games
+---
+
+## Future Roadmap
+
+* **Data Governance:** Transition metadata architecture to Unity Catalog for column-level lineage and fine-grained access.
+* **Orchestration:** Implement Apache Airflow or Databricks Workflows for automated, scheduled pipeline runs.
+* **Data Quality Guardrails:** Embed **Great Expectations** or Delta Live Tables (DLT) expectations for programmatic data testing.
+* **CI/CD:** Introduce GitHub Actions for automated notebook deployment to staging and production clusters.
+
+---
+
+## Conclusion
+
+This platform demonstrates a production-grade implementation of a Databricks Lakehouse. By separating raw data immutability, structural isolation, and normalized dimensional modeling from pre-aggregated serving layers, the project avoids the pitfalls of unstructured notebook code and delivers a maintainable, high-performance analytical engine fit for enterprise BI.
+
 ```
-
-The SQL layer enables:
-
-* Warehouse materialization
-* Dimensional modeling
-* KPI generation
-* Serving mart creation
-* Analytical optimization
-
----
-
-# Lakehouse Engineering Principles
-
-The architecture intentionally follows modern Lakehouse engineering practices.
-
-Key principles implemented:
-
-* Separation between raw and curated layers
-* Immutable Bronze ingestion
-* Standardized Silver preprocessing
-* Business-oriented Gold warehouse modeling
-* Delta transactional reliability
-* Query optimization through Delta operations
-* BI-oriented serving marts
-* Analytical scalability through Spark
-
-The project was designed to emulate real-world analytical platform construction rather than isolated notebook experimentation.
-
----
-
-# Performance Considerations
-
-The project includes several optimization strategies.
-
-## Delta Optimization
-
-```sql
-OPTIMIZE steam.gold.fact_games
-```
-
-## Storage Optimization
-
-* Columnar Delta storage
-* Reduced scan amplification
-* Distributed Spark execution
-* Optimized analytical reads
-
-## Analytical Optimization
-
-* Pre-aggregated marts
-* Bridge-table normalization
-* Reduced fan-out risk
-* Dimensional filtering
-
-These optimizations improve scalability and dashboard responsiveness when working with large analytical datasets.
-
----
-
-# Databricks Integration
-
-The project was fully developed inside Databricks.
-
-The platform leverages:
-
-* Databricks notebooks
-* Spark clusters
-* Delta Lake tables
-* Databricks SQL
-* Interactive visualizations
-* Distributed processing
-
-The notebooks can be published directly through Databricks public sharing for interactive review and dashboard exploration.
-
----
-
-# Dataset Characteristics
-
-The Steam dataset contains semi-structured marketplace information including:
-
-* Game metadata
-* Publishers and developers
-* Pricing information
-* Discounts
-* Reviews
-* Estimated owners
-* Platforms
-* Genres
-* Languages
-* Categories
-* Age restrictions
-* Release dates
-
-The nested schema requires flattening and normalization strategies during the Silver transformation phase.
-
----
-
-# Engineering Challenges
-
-Several data engineering challenges were addressed during implementation.
-
-## Semi-Structured Modeling
-
-The Steam dataset contains nested arrays and complex fields requiring distributed flattening strategies.
-
-## Many-to-Many Relationships
-
-Games may belong to multiple genres, publishers and categories.
-
-Bridge tables were implemented to preserve aggregation correctness.
-
-## Large-Scale Aggregation
-
-Distributed Spark transformations were required to compute market-wide metrics efficiently.
-
-## Data Quality Normalization
-
-The pipeline standardizes:
-
-* Missing publishers
-* Empty categorical values
-* Nested array structures
-* Date inconsistencies
-* Numeric type conversions
-
----
-
-# Future Improvements
-
-* Airflow orchestration
-* Incremental Delta ingestion
-* Automated data quality testing
-* CI/CD deployment pipelines
-* Unity Catalog governance
-* Advanced Delta partitioning
-* Real-time ingestion pipelines
-* Power BI or Tableau integration
-* Dockerized orchestration stack
-
----
-
-# Analytical Positioning
-
-The project approaches Steam as a large-scale digital marketplace rather than simply a gaming catalog.
-
-The analytical focus is therefore centered around:
-
-* ecosystem concentration
-* commercial asymmetries
-* publisher scale effects
-* pricing dynamics
-* platform dominance
-* long-tail distribution patterns
-* genre saturation
-* engagement concentration
-
-Several analyses reveal strong power-law effects where a very small subset of games captures a disproportionate share of player attention and commercial traction.
-
-This positioning transforms the dataset into a genuine market intelligence use case rather than a simple exploratory gaming project.
-
----
-
-# Conclusion
-
-This project demonstrates the implementation of a production-oriented Medallion Architecture on Databricks for large-scale marketplace analytics.
-
-The platform combines:
-
-* Cloud-native Lakehouse engineering
-* Delta-based warehousing
-* Dimensional modeling
-* Many-to-many bridge resolution
-* Scalable PySpark transformations
-* Business intelligence serving layers
-* Advanced Steam marketplace analytics
-
-Rather than limiting the project to exploratory notebook analysis, the architecture was designed as a modular analytical platform aligned with modern Data Engineering and Analytics Engineering practices.
-
