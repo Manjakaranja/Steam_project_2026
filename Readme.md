@@ -1,6 +1,6 @@
-# Steam Market Intelligence Lakehouse
+# Steam market analysis Lakehouse
 
-Production-oriented Medallion Architecture built on Databricks to analyze Steam's global video game marketplace using PySpark, Delta Lake, and AWS S3.
+Databricks Lakehouse project implementing a Medallion Architecture to analyze Steam's global video game marketplace using PySpark, Delta Lake, and AWS S3.
 
 ---
 
@@ -8,7 +8,7 @@ Production-oriented Medallion Architecture built on Databricks to analyze Steam'
 
 This platform was developed as part of the **CDSD RNCP Level 6 certification pathway (RNCP35288)**, specifically for *Bloc 2 (Large-scale data processing, analytical modeling, and cloud-native data architectures)*.
 
-Instead of relying on traditional, isolated exploratory notebooks, this project intentionally embraces enterprise-grade **Analytics Engineering** practices. It positions Steam as a massive, macroeconomic digital marketplace to help publishers, analysts, and product teams answer business-critical questions:
+Instead of relying on traditional, isolated exploratory notebooks, this project intentionally embraces enterprise-grade **Analytics Engineering** practices. It positions Steam as an important, macroeconomic digital marketplace to help publishers, analysts, and product teams answer business-critical questions:
 
 * **Market Concentration:** Which publishers dominate the marketplace, and where are the power-law effects/revenue concentrations?
 * **Commercial Traction:** Which genres and pricing/discount strategies generate the highest user engagement?
@@ -21,7 +21,7 @@ Instead of relying on traditional, isolated exploratory notebooks, this project 
 
 * **Data Platform:** Databricks, Apache Spark (PySpark / Spark SQL), Delta Lake, AWS S3
 * **Analytics Engineering:** Python, Pandas, Databricks SQL Engine
-* **Visualization:** Databricks Visualization Engine & Dashboards
+* **Visualization:** Seaborn, Matplotlib
 
 ---
 
@@ -30,28 +30,27 @@ Instead of relying on traditional, isolated exploratory notebooks, this project 
 The platform implements a classic **Medallion Architecture** using AWS S3 as the object store and Delta Lake as the transactional storage format. 
 
 ```text
- s3://full-stack-bigdata-datasets/.../steam_game_output.json
+s3://full-stack-bigdata-datasets/.../steam_game_output.json
                             │
                             ▼
                ┌──────────────────────────┐
-               │    steam.bronze (S3)     │ ◄── [Step 2: Raw Ingestion & Schema Lock]
+               │   steam.bronze (Delta)   │ ◄── Step 1: Raw ingestion & schema
                └────────────┬─────────────┘
                             │
                             ▼
                ┌──────────────────────────┐
-               │    steam.silver (S3)     │ ◄── [Step 3: Cleaning & Array Flattening]
+               │   steam.silver (Delta)   │ ◄── Step 2: Cleaning & normalization
                └────────────┬─────────────┘
                             │
                             ▼
                ┌──────────────────────────┐
-               │  steam.gold (Core Whse)  │ ◄── [Step 4: Dimension/Fact Star Schema]
+               │    steam.gold (Delta)    │ ◄── Step 3: Facts, dimensions, marts
                └────────────┬─────────────┘
                             │
                             ▼
                ┌──────────────────────────┐
-               │  steam.gold (BI Marts)   │ ◄── [Step 5: Pre-Aggregated Serving Layer]
+               │ Analytics & Visualization│ ◄── Step 4: Seaborn / Matplotlib
                └──────────────────────────┘
-
 ```
 
 ### Repository Structure & Execution Order
@@ -64,7 +63,7 @@ project/
 ├── bronze_ingestion.ipynb              # 2. Immutable raw ingestion from S3 to Delta
 ├── silver_preprocessing.ipynb          # 3. Type normalization, flattening, & feature prep
 ├── gold_core_and_serving_marts.ipynb  # 4. Dimensional modeling & BI materialization
-├── gold_analytics.ipynb               # 5. Market intelligence & dashboard metrics
+├── gold_analytics.ipynb               # 5. market analysis & dashboard metrics
 ├── requirements.txt
 └── README.md
 
@@ -115,7 +114,7 @@ Transforms Silver datasets into a robust, conformed **Star Schema Warehouse** to
 
 ```
 
-* **Conformed Dimensions:** `dim_publishers` (with fallback logic for missing values), `dim_genres`, and a calendar-based `dim_dates`.
+* **Conformed Dimensions:** `dim_publishers` (standardized handling of missing publisher values), `dim_genres`, and a calendar-based `dim_dates`.
 * **Central Fact Table:** `fact_games` — Houses granular business metrics (pricing, reviews, estimated ownership, platform support indices).
 * **Many-to-Many (M2M) Resolution:** Games on Steam frequently have multiple genres and publishers. Joining directly against them introduces dangerous **fan-out duplication effects** that artificially multiply revenue/ownership metrics. This project cleanly resolves M2M constraints using dedicated **Bridge Tables**:
 * `steam.gold.bridge_game_genres`
@@ -125,10 +124,24 @@ Transforms Silver datasets into a robust, conformed **Star Schema Warehouse** to
 
 ### Step 5: Gold Serving Layer (Data Marts)
 
-To optimize BI query response times and lower dashboard engine workloads, wide, pre-aggregated serving data marts are materialized directly in Delta:
+To improve query performance and simplify dashboard queries, several serving marts are materialized directly in Delta tables:
 
-* `steam.gold.mart_publisher_performance`: Tracks publisher KPIs, average pricing, market share, and review success.
-* `steam.gold.market_trends`: Time-series aggregates monitoring market dynamics and ecosystem expansion across years.
+- `steam.gold.mart_publisher_performance`
+  Publisher-level metrics such as number of games, average pricing, ownership estimates, and review ratios.
+
+- `steam.gold.market_trends`
+  Yearly market trends including release volume, pricing evolution, and ecosystem growth.
+
+- `steam.gold.genre_platform_summary`
+  Genre distribution across Windows, MacOS, and Linux platforms.
+
+- `steam.gold.genre_review_summary`
+  Average review performance and engagement metrics by genre.
+
+- `steam.gold.publisher_genre_focus`
+  Publisher specialization by genre and catalog composition.
+
+These marts are pre-aggregated to reduce heavy joins and repeated calculations during analytics and visualization workloads.
 
 ---
 
