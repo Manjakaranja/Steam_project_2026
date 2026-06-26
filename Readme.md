@@ -2,6 +2,10 @@
 
 Databricks Lakehouse project implementing a Medallion Architecture to analyze Steam's global video game marketplace using PySpark, Delta Lake, and AWS S3.
 
+**Link Notebook** : https://dbc-d6f92ac6-02fe.cloud.databricks.com/editor/notebooks/691053708266143?o=7474654066156834  
+
+**Link Dashboard** : https://dbc-d6f92ac6-02fe.cloud.databricks.com/editor/notebooks/691053708266143/dashboards/f98b585c-3dde-4404-961d-048c3823ef41?o=7474654066156834 
+
 ---
 
 ## Academic & Business Context
